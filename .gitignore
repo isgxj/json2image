@@ -1,0 +1,12 @@
+.DS_Store
+.idea
+
+# 第三方依赖
+node_modules/
+
+# dist 目录文件包
+dist/
+doc/
+yarn.lock
+yarn-error.log
+package-lock.json
