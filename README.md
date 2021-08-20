@@ -44,9 +44,10 @@ json2image
 ```
 npm i -S json2image
 or
-yarn add -D json2image
+yarn add -S json2image
 or
 直接在script标签中使用
+<script src="https://unpkg.com/browse/json2image@0.1.1/dist/index.js"></script>
 ```
 
 #### 使用
