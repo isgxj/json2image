@@ -6,7 +6,7 @@ node_modules/
 
 # dist 目录文件包
 dist/
-doc/
+/doc/
 yarn.lock
 yarn-error.log
 package-lock.json

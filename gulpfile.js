@@ -4,8 +4,10 @@ const browserSync = require('browser-sync').create(); //浏览器刷新
 const { getBabelOutputPlugin } = require('@rollup/plugin-babel');
 const { terser } =  require("rollup-plugin-terser");
 
+const devDir = 'src/dev/';
 const jsDir = 'src/*.js';
-const htmlDir = 'src/dev/index.html';
+const htmlDir = `${devDir}index.html`;
+const outputDir = 'doc/';
 
 const buildJs = async function (cb) {
   const bundle = await rollup.rollup({
@@ -21,7 +23,7 @@ const buildJs = async function (cb) {
     ],
   });
 
-  const file = 'src/dev/index.js';
+  const file = `${outputDir}index.js`;
   await bundle.write({
     file,
     format: 'umd',
@@ -32,26 +34,27 @@ const buildJs = async function (cb) {
   cb && cb();
 };
 
-const buildHtml = function (cb) {
-  gulp.src(htmlDir).pipe(browserSync.stream());
-  cb();
+const buildHtml = function () {
+  return gulp.src(htmlDir)
+    .pipe(gulp.dest(outputDir))
+    .pipe(browserSync.stream());
 };
 
+const build = function () {
+  buildJs();
+  return gulp.src(`${devDir}**/*`).pipe(gulp.dest(outputDir));
+}
+
 const dev = function () {
+  build();
   browserSync.init({
-    server: 'src/dev/',
+    server: outputDir,
     port: 8080,
     open: 'external',
   });
   gulp.watch([jsDir], buildJs);
   gulp.watch([htmlDir], buildHtml);
 };
-
-const build = function (cb) {
-  buildJs();
-  gulp.src('src/dev/*').pipe(gulp.dest('doc'));
-  cb();
-}
 
 exports.default = dev;
 exports.build = build;
