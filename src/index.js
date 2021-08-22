@@ -18,13 +18,15 @@ if (!Object.assign) {
   };
 }
 
-function drawCanvas(data, callback, callbackError) {
-  let canvas = document.createElement('canvas');
+function drawCanvas(data, callback, callbackError, canvasEl) {
+  const canvas = canvasEl ? canvasEl : document.createElement('canvas');
 
   // 默认配置
   const defaultData = {
     width: 750,
     height: 200,
+    output: 'jpeg',
+    quality: 0.6,
     lineHeight: 1.5,
     color: '#263238',
     textAlign: 'left',
@@ -197,7 +199,10 @@ function drawCanvas(data, callback, callbackError) {
     ctx.putImageData(main, 0, 0);
 
     // 导出图片url
-    const dataUrl = canvas.toDataURL('image/png', 1);
+    const dataUrl = canvas.toDataURL(
+      'image/' + newData.output,
+      newData.quality
+    );
     setTimeout(function () {
       callback && callback(dataUrl);
     }, 100);
@@ -213,14 +218,17 @@ function drawCanvas(data, callback, callbackError) {
 
   // 加载图片
   const loadImage = function (imgArr, cb) {
+    if (imgElementLength === 0) {
+      cb && cb();
+      return;
+    }
     imgArr.forEach(function (item) {
       if (!item) return;
       const Img = new Image();
       Img.crossOrigin = 'anonymous';
-      Img.src = item.content;
 
       Img.onload = function () {
-        item.imgObj = this;
+        item.imgObj = Img;
         loadedImgCount++;
         if (loadedImgCount === imgElementLength) {
           cb && cb();
@@ -231,7 +239,20 @@ function drawCanvas(data, callback, callbackError) {
         callbackError && callbackError(err);
         return false;
       };
+
+      Img.src = item.content;
     });
+  };
+
+  const formatTextY = function (y) {
+    // 安卓文字位置有点偏上
+    if (
+      typeof navigator !== 'undefined' &&
+      /Android/.test(navigator.userAgent)
+    ) {
+      return y + 6;
+    }
+    return y;
   };
 
   // 文字片段绘制
@@ -300,7 +321,7 @@ function drawCanvas(data, callback, callbackError) {
           nx -= itemW;
         }
         ctx.textAlign = 'left';
-        ctx.fillText(obj.content, nx, obj.y);
+        ctx.fillText(obj.content, nx, formatTextY(obj.y));
       });
     });
   };
@@ -383,11 +404,6 @@ function drawCanvas(data, callback, callbackError) {
 
     y += lineHeight / 2;
 
-    // 安卓文字位置有点偏上
-    if (/Android/.test(navigator.userAgent)) {
-      y += 6;
-    }
-
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.font = font;
@@ -396,7 +412,7 @@ function drawCanvas(data, callback, callbackError) {
       drawTextArr(
         cont,
         x,
-        y,
+        formatTextY(y),
         w,
         lineHeight,
         color,
