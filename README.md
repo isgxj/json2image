@@ -2,11 +2,17 @@ json2image
 ===========
 
 ### 原理
-通过配置json使用原生canvas将图片和文字组合生成一张base64图片
+通过配置json使用原生canvas将图片和文字组合生成一张base64图片  
+
+### 演示  
+<a href="https://sls-layer-ap-guangzhou-code-1251208590.cos-website.ap-guangzhou.myqcloud.com/json2image/" target="_blank">demo</a>  
 
 ### 使用场景
 1、生成分享海报，可以100%还原设计稿  
 2、复杂文字、图片组合样式，方便适配多屏幕  
+3、图片压缩  
+4、添加水印  
+5、支持部署到node后端，可以无视跨域问题、兼容问题等 <a href="https://github.com/isgxj/json2image-scf" target="_blank">云函数示例</a>  
 
 ### 功能
 * 多行文本自动换行，支持左中右对齐
@@ -18,6 +24,7 @@ json2image
 * 图片圆角
 * 导出动态高度
 * 可以缩放调整清晰度，设置ratio即可
+* 设置quality可以实现图片文件大小压缩
 
 ### 计划
 - [ ] 小程序版本
@@ -47,17 +54,21 @@ or
 yarn add -S json2image
 or
 直接在script标签中使用
-<script src="https://unpkg.com/browse/json2image@0.1.1/dist/index.js"></script>
+<script src="https://unpkg.com/browse/json2image@0.1.3/dist/index.js"></script>
 ```
 
-#### 使用
+#### 使用  
+注意：前端生成时，跨域图片需要后端设置cors  
 
 ```js
 import json2image from 'json2image';
 
+// 1、生成海报
 const data = {
   width: 750, // 设计稿图片宽度
-  height: 10, // 设计稿图片高度
+  height: 600, // 设计稿图片高度
+  output: 'jpeg', // 支持png、jpeg
+  quality: 0.6, // 图片质量，0-1，小于1则实现压缩
   lineHeight: 1.5,
   color: '#263238',
   textAlign: 'left',
@@ -133,4 +144,30 @@ json2image(data, (url) => {
   // 返回base64格式图片
   console.log(url);
 }, err => console.log(err));
+
+
+
+
+// 2、压缩图片
+const data2 = {
+  width: 750,
+  height: 600,
+  output: 'jpeg',
+  quality: 0.5, // 压缩文件大小，目前只支持输出jpeg格式有效
+  ratio: 0.5, // 压缩分辨率
+  elements: [
+    {
+      type: 'img',
+      width: 750,
+      height: 600,
+      content: './images/big.png',
+    },
+  ],
+};
+
+json2image(data2, (url) => {
+  // 返回base64格式图片
+  console.log(url);
+}, err => console.log(err));
+
 ```
