@@ -19,7 +19,7 @@ if (!Object.assign) {
 }
 
 function drawCanvas(data, callback, callbackError, canvasEl) {
-  const canvas = canvasEl ? canvasEl : document.createElement('canvas');
+  const canvas = canvasEl || document.createElement('canvas');
 
   // 默认配置
   const defaultData = {
@@ -114,6 +114,38 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     }
   };
 
+  // 计算文字宽度
+  const getTextWidth = function (str) {
+    return ctx.measureText(str).width;
+  };
+
+  // 计算换行
+  const getTextRow = function (str, width, height) {
+    const strLen = str.length;
+    let tmp = '';
+    let row = [];
+    for (let i = 0; i < strLen; i++) {
+      const isBreakLine = str[i] === '\n';
+      if (getTextWidth(tmp) < width && !isBreakLine) {
+        tmp += str[i];
+      } else {
+        row.push(tmp);
+        tmp = isBreakLine ? '' : str[i];
+      }
+    }
+    tmp && row.push(tmp);
+    return row;
+  };
+
+  // 获取字体字符串
+  const getFont = function (fontSize, fontfamily, bold) {
+    let font = fontSize + 'px ' + fontfamily;
+    if (bold) {
+      font = bold + ' ' + font;
+    }
+    return font;
+  };
+
   // 自动换行
   const canvasTextAutoLine = function (
     str,
@@ -123,24 +155,12 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     height,
     lineHeight
   ) {
-    let lineWidth = 0;
-    let lastSubStrIndex = 0;
-    const strLen = str.length;
-    for (let i = 0; i < strLen; i++) {
-      lineWidth += ctx.measureText(str[i]).width;
-      if (lineWidth > width) {
-        ctx.fillText(str.substring(lastSubStrIndex, i), initX, initY);
-        initY += lineHeight;
-        if (newData.autoHeight && initY >= height) {
-          currentY += lineHeight;
-        }
-        lineWidth = ctx.measureText(str[i]).width;
-        lastSubStrIndex = i;
-      }
-      if (i === str.length - 1) {
-        ctx.fillText(str.substring(lastSubStrIndex, i + 1), initX, initY);
-      }
+    const row = getTextRow(str, width);
+    const rowHeight = (row.length + 1) * lineHeight;
+    if (newData.autoHeight && rowHeight > height) {
+      currentY += height - rowHeight;
     }
+    row.forEach((r, i) => ctx.fillText(r, initX, initY + i * lineHeight));
   };
 
   // 绘制圆角并裁剪
@@ -172,7 +192,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   const ellipsis = function (str, maxWidth) {
     const strLen = str.length;
     for (let i = 0; i < strLen; i++) {
-      if (ctx.measureText(str.substr(0, i + 1)).width > maxWidth) {
+      if (getTextWidth(str.substr(0, i + 1)) > maxWidth) {
         return `${str.substr(0, i)}...`;
       }
     }
@@ -181,6 +201,12 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
 
   // 导出
   const output = function () {
+    // 无输出格式
+    if (!newData.output) {
+      callback && callback(null);
+      return;
+    }
+
     // 获取可变部分图像
     const contW = newData.width;
     let contH = newData.height;
@@ -205,7 +231,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     );
     setTimeout(function () {
       callback && callback(dataUrl);
-    }, 100);
+    }, 0);
   };
 
   // 每次绘制节点完成后检查是否全部绘制完成
@@ -271,6 +297,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     const initX = x;
     let initY = y;
     let lineWidth = 0;
+    const lineWidthArr = [];
     const textAlign = ctx.textAlign;
     const contObjs = [];
     let contObjsLen = 0;
@@ -278,22 +305,22 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     // 先计算出每个字的位置和状态
     contentArr.forEach(function (item) {
       const strtxt = item.content;
-      let font =
-        (getRatio(item.fontSize) || fontSize) +
-        'px ' +
-        (item.fontfamily || fontfamily);
-      if (item.bold) {
-        font = item.bold + ' ' + ctx.font;
-      }
+      const fs = getRatio(item.fontSize) || fontSize;
+      const ff = item.fontfamily || fontfamily;
+      const font = getFont(fs, ff, item.bold);
+      ctx.font = font;
       for (let i = 0; i < strtxt.length; i++) {
-        const curW = ctx.measureText(strtxt[i]).width;
+        const isBreakLine = strtxt[i] === '\n';
+        const curW = getTextWidth(strtxt[i]);
         lineWidth += curW;
-        if (lineWidth > w && autoHeight) {
+        if (lineWidth > w && autoHeight || isBreakLine) {
           initY += lineHeight;
           if (newData.autoHeight) {
             currentY += lineHeight;
           }
-          lineWidth = curW;
+          const tw = isBreakLine ? 0 : curW;
+          lineWidthArr.push(lineWidth - tw);
+          lineWidth = tw;
           contObjsLen += 1;
         }
         if (!contObjs[contObjsLen]) contObjs[contObjsLen] = [];
@@ -306,10 +333,12 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
         });
       }
     });
+    lineWidth && lineWidthArr.push(lineWidth);
 
-    // 每绘制
-    contObjs.forEach(function (item) {
-      const itemW = ctx.measureText(item.map(ii => ii.content).join('')).width;
+    // 每个字绘制
+    ctx.textAlign = 'left';
+    contObjs.forEach(function (item, i) {
+      const itemW = lineWidthArr[i];
       item.forEach(function (obj) {
         ctx.fillStyle = obj.color;
         ctx.font = obj.font;
@@ -320,7 +349,6 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
         if (isTextAlignRight(textAlign)) {
           nx -= itemW;
         }
-        ctx.textAlign = 'left';
         ctx.fillText(obj.content, nx, formatTextY(obj.y));
       });
     });
@@ -373,16 +401,13 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
       h = getRatio(element.height || 0),
       color = element.color || newData.color,
       lh = element.lineHeight || newData.lineHeight;
+    
+    const font = getFont(fontSize, fontfamily, element.bold);
 
-    let font = fontSize + 'px ' + fontfamily,
-      cont = element.content,
+    let cont = element.content,
       x = getRatio(element.x || 0),
       y = getRatio(element.y || 0);
     const lineHeight = lh * fontSize;
-
-    if (element.bold) {
-      font = element.bold + ' ' + font;
-    }
 
     switch (textAlign) {
       case 'center':
@@ -424,14 +449,13 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
       canvasTextAutoLine(cont, x, y, w, y + h, lineHeight);
     } else {
       if (element.rotate) {
+        // const tw = getTextWidth(cont);
+        const rx = newData.width - (element.width || 0);
+        ctx.translate(rx / 2, y);
         ctx.rotate((Math.PI / 180) * element.rotate); // 弧度 = (Math.PI/180)*角度
-        const tw = ctx.measureText(cont).width;
-        if (element.rotateCenter && tw < 75) {
-          x = x + 47 - tw / 2;
-        }
-        ctx.fillText(cont, x, y);
+        ctx.fillText(cont, 0, 0);
         ctx.fill();
-        ctx.rotate(0);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
       } else {
         ctx.fillText(cont, x, y);
         ctx.fill();
