@@ -5,193 +5,84 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <script src="index.js"></script>
+  <title>json2image</title>
+  <link rel="stylesheet" href="https://unpkg.com/jsoneditor@9.5.3/dist/jsoneditor.min.css">
+  <style>
+    .demo .item {
+      display: flex;
+      align-items: start;
+    }
+    @media screen and (max-width: 750px) {
+      .demo .item {
+        display: block;
+      }
+    }
+    .demo .item__txt {
+      width: 400px;
+      max-width: 100%;
+      height: 938px;
+    }
+    .demo .item__img {
+      width: 375px;
+      max-width: 100%;
+    }
+  </style>
 </head>
 
 <body>
-  <div id="app">
-    <img id="demoImg" src="" alt="" style="width: 375px; max-width: 100%;">
-    <canvas id="canvas"></canvas>
+  <div class="demo">
+    <h1><a href="https://github.com/isgxj/json2image" target="_blank">json2image</a> 演示</h1>
+    <h2>本地生成海报</h2>
+    <div class="item">
+      <div id="editorEl" class="item__txt" name=""></div>
+      <img id="demoImg" class="item__img" src="" alt="">
+    </div>
+    <h2>node后端生成海报</h2>
+    <div class="item">
+      <div id="editorEl2" class="item__txt" name=""></div>
+      <img id="demoImg2" class="item__img" src="" alt="">
+    </div>
   </div>
-  <div id="t"></div>
+  <script src="https://unpkg.com/jsoneditor@9.5.3/dist/jsoneditor.min.js"></script>
+  <script src="index.js"></script>
+  <script src="data.js"></script>
   <script>
-    var drawFlag = false;
-    var imgEl = document.getElementById('demoImg');
-    var tipTxtsShare = ['哇！真幸运～', '知识就是力量'];
-    function demo() {
-      if (drawFlag) return;
-      drawFlag = true;
-      var shareTit = [
-        {
-          bold: 700,
-          content: '我答对了 ',
-        },
-        {
-          bold: 700,
-          color: '#ED3142',
-          content: String(3),
-        },
-        {
-          bold: 700,
-          content: ' 题，获得 ',
-        },
-        {
-          bold: 700,
-          color: '#ED3142',
-          content: String(10),
-        },
-        {
-          bold: 700,
-          content: ' 元配捐',
-        },
-      ];
-      var data = {
-        width: 750,
-        height: 1078,
-        color: '#263238',
-        bgColor: '#fff',
-        elements: [
-          {
-            type: 'img',
-            x: 0,
-            y: 0,
-            width: 750,
-            height: 1079,
-            content: 'images/share-bg.jpg',
-          },
-          {
-            type: 'text',
-            x: 0,
-            y: 0,
-            width: 600,
-            color: '#071E4A',
-            fontSize: 36,
-            bold: 700,
-            // textAlign: 'right',
-            content: '为什么偏下了',
-          },
-          {
-            type: 'text',
-            x: 300,
-            y: 0,
-            width: 600,
-            color: '#fff',
-            fontSize: 36,
-            bold: 700,
-            // textAlign: 'right',
-            content: 'why not right?',
-          },
-          {
-            type: 'img',
-            x: 80,
-            y: 382,
-            width: 96,
-            autoHeight: true,
-            content: 'images/avatar.png',
-          },
-          {
-            type: 'text',
-            x: 80,
-            y: 510,
-            width: 600,
-            color: '#071E4A',
-            fontSize: 36,
-            bold: 700,
-            // textAlign: 'right',
-            content: shareTit,
-          },
-          {
-            type: 'text',
-            width: 600,
-            x: 80,
-            y: 576,
-            color: '#3C5A6E',
-            fontSize: 32,
-            autoHeight: true,
-            // textAlign: 'center',
-            content: `快来和我一起参与答题挑战，涨公益知识为 projectName 赢爱心配捐。`,
-          },
-          {
-            type: 'text',
-            // width: 600,
-            x: -80,
-            y: 676,
-            color: '#3C5A6E',
-            fontSize: 32,
-            // autoHeight: true,
-            textAlign: 'right',
-            content: `快来和我一起参与答题挑战`,
-          },
-          {
-            type: 'img',
-            x: 352,
-            y: 754,
-            width: 216,
-            height: 74,
-            content: 'images/share-tip-bg.png',
-          },
-          {
-            type: 'text',
-            x: 376,
-            y: 764,
-            color: '#ED3142',
-            fontSize: 28,
-            bold: 700,
-            content: tipTxtsShare[parseInt(Math.random() * 2, 10)],
-          },
-          {
-            type: 'img',
-            x: 584,
-            y: 772,
-            width: 96,
-            height: 111,
-            content: 'images/share-flower.png',
-          },
-          {
-            type: 'img',
-            x: 32,
-            y: 883,
-            width: 686,
-            height: 163,
-            content: 'images/share-foot-bg.png',
-          },
-          {
-            type: 'text',
-            x: 80,
-            y: 915,
-            color: 'rgba(7,30,74,.7)',
-            fontSize: 28,
-            content: '长按或扫描二维码参与答题助力',
-          },
-          {
-            type: 'img',
-            x: 80,
-            y: 972,
-            width: 356,
-            height: 48,
-            content: 'images/share-logo.png',
-          },
-          {
-            type: 'img',
-            x: 550,
-            y: 904,
-            width: 120,
-            height: 120,
-            content: 'images/share-code.png',
-          },
-        ],
-      };
-      json2image(
-        data,
-        url => {
-          imgEl.src = url;
-          drawFlag = false;
-        },
-        err => console.log(err),
-      );
+    // 本地生成
+    var editorEl = document.getElementById('editorEl');
+    var demoImg = document.getElementById('demoImg');
+    function draw(d) {
+      json2image(d, url => demoImg.src = url, err => console.log(err));
     }
-    demo();
+    draw(data);
+    var editor = new JSONEditor(editorEl, {
+      mode: 'code',
+      mainMenuBar: false,
+      statusBar: false,
+      onChange: function () {
+        var json = editor.get();
+        draw(json);
+      }
+    }, data);
+  </script>
+  <script>
+    // node后端生成
+    var editorEl2 = document.getElementById('editorEl2');
+    var demoImg2 = document.getElementById('demoImg2');
+    var scfurl = 'https://service-4mmg3i8c-1251208590.gz.apigw.tencentcs.com/release/json2image';
+    function draw2(d) {
+      var url = scfurl + '?data=' + encodeURIComponent(JSON.stringify(d));
+      demoImg2.src = url;
+    }
+    draw2(dataNode);
+    var editor = new JSONEditor(editorEl2, {
+      mode: 'code',
+      mainMenuBar: false,
+      statusBar: false,
+      onChange: function () {
+        var json = editor.get();
+        draw2(json);
+      }
+    }, dataNode);
   </script>
 </body>
 

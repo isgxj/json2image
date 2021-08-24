@@ -7,6 +7,7 @@ const { terser } =  require("rollup-plugin-terser");
 const devDir = 'src/dev/';
 const jsDir = 'src/*.js';
 const htmlDir = `${devDir}index.html`;
+const dataDir = `${devDir}data.js`;
 const outputDir = 'doc/';
 
 const buildJs = async function (cb) {
@@ -40,6 +41,12 @@ const buildHtml = function () {
     .pipe(browserSync.stream());
 };
 
+const buildData = function () {
+  return gulp.src(dataDir)
+    .pipe(gulp.dest(outputDir))
+    .pipe(browserSync.stream());
+};
+
 const build = function () {
   buildJs();
   return gulp.src(`${devDir}**/*`).pipe(gulp.dest(outputDir));
@@ -54,6 +61,7 @@ const dev = function () {
   });
   gulp.watch([jsDir], buildJs);
   gulp.watch([htmlDir], buildHtml);
+  gulp.watch([dataDir], buildData);
 };
 
 exports.default = dev;
