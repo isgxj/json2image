@@ -74,12 +74,12 @@
       demoImg2.src = url;
     }
     draw2(dataNode);
-    var editor = new JSONEditor(editorEl2, {
+    var editorNode = new JSONEditor(editorEl2, {
       mode: 'code',
       mainMenuBar: false,
       statusBar: false,
       onChange: function () {
-        var json = editor.get();
+        var json = editorNode.get();
         draw2(json);
       }
     }, dataNode);

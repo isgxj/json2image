@@ -6,6 +6,7 @@ json2image
 
 ### 演示  
 <a href="https://sls-layer-ap-guangzhou-code-1251208590.cos-website.ap-guangzhou.myqcloud.com/json2image/" target="_blank">demo</a>  
+<img src="https://sls-layer-ap-guangzhou-code-1251208590.cos.ap-guangzhou.myqcloud.com/json2image/demo1.jpg" width="500">  
 
 ### 使用场景
 1、生成分享海报，可以100%还原设计稿  
