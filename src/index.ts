@@ -1,24 +1,45 @@
-if (!Object.assign) {
-  Object.assign = function (target) {
-    if (target === null || target === undefined) {
-      target = {};
-    }
-    target = Object(target);
-    for (var index = 1; index < arguments.length; index++) {
-      var source = arguments[index];
-      if (source != null) {
-        for (var key in source) {
-          if (Object.prototype.hasOwnProperty.call(source, key)) {
-            target[key] = source[key];
-          }
-        }
-      }
-    }
-    return target;
-  };
-}
+// 画布和节点公共的属性
+type dataCommonType = {
+  lineHeight?: number,
+  color?: string,
+  textAlign?: 'center' | 'left' | 'right',
+  fontSize?: number,
+  fontFamily?: string,
+  autoHeight?: boolean,
+};
 
-function drawCanvas(data, callback, callbackError, canvasEl) {
+// 节点属性
+type dataElementType = {
+  type: 'img' | 'txt',
+  x?: number,
+  y?: number,
+  width?: number,
+  height?: number,
+  radius?: number,
+  content: string | dataElementType[],
+  maxWidth?: number,
+  rotate?: number,
+  bold?: number,
+  imgObj?: HTMLImageElement,
+} & dataCommonType;
+
+// 画布属性
+type dataType = {
+  width: number,
+  height: number,
+  output?: 'jpeg' | 'png',
+  quality?: number,
+  ratio?: number,
+  bgColor?: string,
+  elements?: dataElementType[],
+} & dataCommonType;
+
+function drawCanvas(
+  data: dataType,
+  callback?: (ops?: string) => void,
+  callbackError?: (ops?: string | Event) => void,
+  canvasEl?: HTMLCanvasElement,
+) {
   const canvas = canvasEl || document.createElement('canvas');
 
   // 默认配置
@@ -31,21 +52,22 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     color: '#263238',
     textAlign: 'left',
     fontSize: 14,
-    fontFamily:
-      '"PingFang SC",tahoma,arial,"helvetica neue","hiragino sans gb","microsoft yahei",sans-serif',
+    fontFamily: '"PingFang SC",tahoma,arial,"helvetica neue","hiragino sans gb","microsoft yahei",sans-serif',
     autoHeight: false,
     ratio: 2,
     bgColor: 'rgba(255, 255, 255, 0)',
-    elements: [],
+    elements: [] as dataElementType[],
   };
+
   // 合并配置数据
   const newData = Object.assign({}, defaultData, data);
   const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('canvas no find');
+  };
 
   const ratio = newData.ratio;
-  const getRatio = function (num) {
-    return num * ratio;
-  };
+  const getRatio = (num = 0) => num * ratio;
 
   // 当前Y坐标
   let currentY = 0;
@@ -73,16 +95,12 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   // 设计文字基线
   ctx.textBaseline = 'middle';
 
-  const isTextAlignCenter = function (textAlign) {
-    return textAlign === 'center';
-  };
+  const isTextAlignCenter = (textAlign?: string) => textAlign === 'center';
 
-  const isTextAlignRight = function (textAlign) {
-    return textAlign === 'right' || textAlign === 'end';
-  };
+  const isTextAlignRight = (textAlign?: string) => textAlign === 'right';
 
   // 指定宽高内绘制图片（background-size:cover方式）
-  const drawImgCover = function (img, contW, contH, startX, startY) {
+  const drawImgCover = (img: HTMLImageElement, contW: number, contH: number, startX: number, startY: number) => {
     if (img.width / img.height >= contW / contH) {
       const dH = img.height;
       const dW = Math.ceil((contW / contH) * dH);
@@ -115,12 +133,10 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 计算文字宽度
-  const getTextWidth = function (str) {
-    return ctx.measureText(str).width;
-  };
+  const getTextWidth = (str: string) => ctx.measureText(str).width;
 
   // 计算换行
-  const getTextRow = function (str, width, height) {
+  const getTextRow = (str: string, width: number, height: number) => {
     const strLen = str.length;
     let tmp = '';
     let row = [];
@@ -138,7 +154,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 获取字体字符串
-  const getFont = function (fontSize, fontfamily, bold) {
+  const getFont = (fontSize: number, fontfamily: string, bold?: number) => {
     let font = fontSize + 'px ' + fontfamily;
     if (bold) {
       font = bold + ' ' + font;
@@ -147,15 +163,15 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 自动换行
-  const canvasTextAutoLine = function (
-    str,
-    initX,
-    initY,
-    width,
-    height,
-    lineHeight
-  ) {
-    const row = getTextRow(str, width);
+  const canvasTextAutoLine = (
+    str: string,
+    initX: number,
+    initY: number,
+    width: number,
+    height: number,
+    lineHeight: number,
+  ) => {
+    const row = getTextRow(str, width, height);
     const rowHeight = (row.length + 1) * lineHeight;
     if (newData.autoHeight && rowHeight > height) {
       currentY += height - rowHeight;
@@ -164,7 +180,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 绘制圆角并裁剪
-  const drawRoundedRect = function (x, y, width, height, r) {
+  const drawRoundedRect = (x: number, y: number, width: number, height: number, r: number) => {
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -177,19 +193,19 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 居中图片
-  const centerImg = function (img, startX, startY, w, h) {
+  const centerImg = (img: HTMLImageElement, startX: number, startY: number, w: number, h: number) => {
     const x = startX + (newData.width - w) / 2;
     ctx.drawImage(img, x, startY, w, h);
   };
 
   // 居右图片
-  const rightImg = function (img, startX, startY, w, h) {
+  const rightImg = (img: HTMLImageElement, startX: number, startY: number, w: number, h: number) => {
     const x = startX + newData.width - w;
     ctx.drawImage(img, x, startY, w, h);
   };
 
   // 最大长度省略文字
-  const ellipsis = function (str, maxWidth) {
+  const ellipsis = (str: string, maxWidth: number) => {
     const strLen = str.length;
     for (let i = 0; i < strLen; i++) {
       if (getTextWidth(str.substr(0, i + 1)) > maxWidth) {
@@ -200,10 +216,9 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 导出
-  const output = function () {
+  const output = () => {
     // 无输出格式
     if (!newData.output) {
-      callback && callback(null);
       return;
     }
 
@@ -235,7 +250,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 每次绘制节点完成后检查是否全部绘制完成
-  const checkOutput = function () {
+  const checkOutput = () => {
     drawedElementCount++;
     if (drawedElementCount === elementLength) {
       output();
@@ -243,34 +258,34 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 加载图片
-  const loadImage = function (imgArr, cb) {
-    if (imgElementLength === 0) {
-      cb && cb();
+  const loadImage = (imgArr: dataElementType[], cb: () => void) => {
+    if (imgElementLength === 0 || !imgArr) {
+      cb?.();
       return;
     }
-    imgArr.forEach(function (item) {
+    imgArr.forEach((item) => {
       if (!item) return;
       const Img = new Image();
       Img.crossOrigin = 'anonymous';
 
-      Img.onload = function () {
+      Img.onload = () => {
         item.imgObj = Img;
         loadedImgCount++;
         if (loadedImgCount === imgElementLength) {
-          cb && cb();
+          cb?.();
         }
       };
 
-      Img.onerror = function (err) {
-        callbackError && callbackError(err);
+      Img.onerror = (err) => {
+        callbackError?.(err);
         return false;
       };
 
-      Img.src = item.content;
+      Img.src = item.content as string;
     });
   };
 
-  const formatTextY = function (y) {
+  const formatTextY = (y: number) => {
     // 安卓文字位置有点偏上
     if (
       typeof navigator !== 'undefined' &&
@@ -282,36 +297,42 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 文字片段绘制
-  const drawTextArr = function (
-    contentArr,
-    x,
-    y,
-    w,
-    lineHeight,
-    color,
-    fontSize,
-    fontfamily,
-    autoHeight
-  ) {
-    if (!contentArr || !contentArr.length) return;
+  const drawTextArr = (
+    contentArr: dataElementType[],
+    x: number,
+    y: number,
+    w: number,
+    lineHeight: number,
+    color: string,
+    fontSize: number,
+    fontFamily: string,
+    autoHeight?: boolean,
+  ) => {
+    if (!contentArr?.length) return;
     const initX = x;
     let initY = y;
     let lineWidth = 0;
-    const lineWidthArr = [];
+    const lineWidthArr: number[] = [];
     const textAlign = ctx.textAlign;
-    const contObjs = [];
     let contObjsLen = 0;
+    const contObjs: {
+      content: string,
+      x: number,
+      y: number,
+      color: string,
+      font: string,
+    }[][] = [];
 
     // 先计算出每个字的位置和状态
-    contentArr.forEach(function (item) {
+    contentArr.forEach((item) => {
       const strtxt = item.content;
       const fs = getRatio(item.fontSize) || fontSize;
-      const ff = item.fontfamily || fontfamily;
+      const ff = item.fontFamily || fontFamily;
       const font = getFont(fs, ff, item.bold);
       ctx.font = font;
       for (let i = 0; i < strtxt.length; i++) {
         const isBreakLine = strtxt[i] === '\n';
-        const curW = getTextWidth(strtxt[i]);
+        const curW = getTextWidth(strtxt[i] as string);
         lineWidth += curW;
         if (lineWidth > w && autoHeight || isBreakLine) {
           initY += lineHeight;
@@ -325,7 +346,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
         }
         if (!contObjs[contObjsLen]) contObjs[contObjsLen] = [];
         contObjs[contObjsLen].push({
-          content: strtxt[i],
+          content: strtxt[i] as string,
           x: initX + lineWidth - curW,
           y: initY,
           color: item.color || color,
@@ -337,7 +358,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
 
     // 每个字绘制
     ctx.textAlign = 'left';
-    contObjs.forEach(function (item, i) {
+    contObjs.forEach((item, i) => {
       const itemW = lineWidthArr[i];
       item.forEach(function (obj) {
         ctx.fillStyle = obj.color;
@@ -355,7 +376,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   };
 
   // 绘制图片
-  const drawImage = function (element) {
+  const drawImage = (element: dataElementType) => {
     const x = getRatio(element.x || 0),
       w = getRatio(element.width || 0);
     let y = getRatio(element.y || 0),
@@ -366,6 +387,8 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     }
 
     const Img = element.imgObj;
+    if (!Img) return;
+
     const textAlign = element.textAlign;
 
     ctx.save();
@@ -386,15 +409,15 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
 
     ctx.restore();
 
-    if (element.radius > 0) {
+    if (element.radius && element.radius > 0) {
       drawRoundedRect(x, y, w, h, element.radius);
     }
     checkOutput();
   };
 
   // 绘制文本
-  const drawText = function (element) {
-    const fontfamily = element.fontfamily || newData.fontFamily,
+  const drawText = (element: dataElementType) => {
+    const fontfamily = element.fontFamily || newData.fontFamily,
       fontSize = getRatio(element.fontSize || newData.fontSize),
       textAlign = element.textAlign || newData.textAlign,
       w = getRatio(element.width) || newData.width,
@@ -404,9 +427,9 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     
     const font = getFont(fontSize, fontfamily, element.bold);
 
-    let cont = element.content,
-      x = getRatio(element.x || 0),
-      y = getRatio(element.y || 0);
+    let cont = element.content;
+    let x = getRatio(element.x || 0);
+    let y = getRatio(element.y || 0);
     const lineHeight = lh * fontSize;
 
     switch (textAlign) {
@@ -414,7 +437,6 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
         x += w / 2 || newData.width / 2;
         break;
       case 'right':
-      case 'end':
         x += w || newData.width;
         break;
     }
@@ -424,7 +446,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
     }
 
     if (element.maxWidth) {
-      cont = ellipsis(cont, element.maxWidth);
+      cont = ellipsis(cont as string, element.maxWidth);
     }
 
     y += lineHeight / 2;
@@ -443,13 +465,12 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
         color,
         fontSize,
         fontfamily,
-        element.autoHeight
+        element.autoHeight,
       );
     } else if (element.autoHeight) {
       canvasTextAutoLine(cont, x, y, w, y + h, lineHeight);
     } else {
       if (element.rotate) {
-        // const tw = getTextWidth(cont);
         const rx = newData.width - (element.width || 0);
         ctx.translate(rx / 2, y);
         ctx.rotate((Math.PI / 180) * element.rotate); // 弧度 = (Math.PI/180)*角度
@@ -474,7 +495,7 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   elementLength = newDataElemenes.length;
 
   // 获取图片节点数组，使用map可以保存图片在原始数组中的位置
-  const imgArr = newDataElemenes.map(function (item) {
+  const imgArr: any = newDataElemenes.map((item) => {
     if (item.type === 'img') {
       imgElementLength++;
       return item;
@@ -482,8 +503,8 @@ function drawCanvas(data, callback, callbackError, canvasEl) {
   });
 
   // 加载所有图片，加载完成后开始绘制
-  loadImage(imgArr, function () {
-    newDataElemenes.forEach(function (item, index) {
+  loadImage(imgArr, () => {
+    newDataElemenes.forEach((item, index) => {
       if (item.type === 'img') {
         // 取得加载到的图片对象
         item.imgObj = imgArr[index].imgObj;

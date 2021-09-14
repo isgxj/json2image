@@ -3,17 +3,19 @@ const rollup = require('rollup');
 const browserSync = require('browser-sync').create(); //浏览器刷新
 const { getBabelOutputPlugin } = require('@rollup/plugin-babel');
 const { terser } =  require("rollup-plugin-terser");
+const typescript = require('rollup-plugin-typescript2');
 
 const devDir = 'src/dev/';
-const jsDir = 'src/*.js';
+const jsDir = 'src/*.ts';
 const htmlDir = `${devDir}index.html`;
 const dataDir = `${devDir}data.js`;
 const outputDir = 'doc/';
 
 const buildJs = async function (cb) {
   const bundle = await rollup.rollup({
-    input: './src/index.js',
+    input: './src/index.ts',
     plugins: [
+      typescript(),
       getBabelOutputPlugin({
         allowAllFormats: true,
         presets: [['@babel/preset-env', {
