@@ -7,7 +7,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc --noEmit &&rollup -c",
+    "build": "tsc --noEmit && rollup -c",
     "dev": "gulp",
     "doc": "gulp build"
   },
